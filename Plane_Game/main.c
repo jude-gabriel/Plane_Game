@@ -50,6 +50,112 @@ Graphics_Context g_sContext;
 /* ADC results buffer */
 static uint16_t resultsBuffer[2];
 
+/* Location of plane variables */
+int planeXLeft;
+int planeXRight;
+int planeYTop;
+int planeYBottom;
+
+/* Instance variable used for drawing the plane, slows down planes movement */
+int slowPlane;
+
+/* Delay Variable */
+uint32_t delay_time_us;
+
+/* Asteroid Locations */
+int astXLeft;
+int astXRight;
+int astYTop;
+int astYBottom;
+
+/* Instance variable to slow the asteroid */
+int slowAst;
+
+/* Instance Variable for if the plane makes a collision */
+bool didPlaneCollide;
+
+
+
+
+/**
+ * Erases the plane
+ *
+ * @author Jude Gabriel
+ */
+void eraseRect(Graphics_Context g_sContext, int xMin, int yMin, int xMax, int yMax){
+    //Change the foreground color to the background color
+    Graphics_setForegroundColor(&g_sContext, GRAPHICS_COLOR_BLACK);
+
+    //Create a rectangle
+    Graphics_Rectangle myRectangle = {xMin, yMin, xMax, yMax};
+    Graphics_drawRectangle(&g_sContext, &myRectangle);
+    Graphics_fillRectangle(&g_sContext, &myRectangle);
+
+    //Set foreground color back to original
+    Graphics_setForegroundColor(&g_sContext, GRAPHICS_COLOR_RED);
+}
+
+
+/**
+ * Draws the plane
+ *
+ * @author Jude Gabriel
+ */
+void drawRect(Graphics_Context g_sContext, int xMin, int yMin, int xMax, int yMax){
+   //Change the foreground color to initial foreground color
+    Graphics_setForegroundColor(&g_sContext, GRAPHICS_COLOR_RED);
+
+    //Create and draw a rectangle
+    Graphics_Rectangle myRectangle = {xMin, yMin, xMax, yMax};
+    Graphics_drawRectangle(&g_sContext, &myRectangle);
+    Graphics_fillRectangle(&g_sContext, &myRectangle);
+}
+
+/**
+ * TIMER/DELAY initialization
+ *
+ * Initializes the timer AND delay
+ *
+ * @author Jude Gabriel
+ */
+void timer_delay_init(void){
+    //Initialize the timer
+    Timer32_initModule(TIMER32_0_BASE, TIMER32_PRESCALER_1, TIMER32_32BIT, TIMER32_PERIODIC_MODE);
+    Timer32_disableInterrupt(TIMER32_0_BASE);
+}
+
+
+/**
+ * delay
+ *
+ * Allows the user to delay the specified amount of time
+ *
+ * @author Jude Gabriel
+ */
+void delay(uint32_t duration_us){
+    //Set the timer
+    Timer32_haltTimer(TIMER32_0_BASE);
+    Timer32_setCount(TIMER32_0_BASE, 3 * duration_us);
+    Timer32_startTimer(TIMER32_0_BASE, true);
+
+    //Have the timer count down
+    while(Timer32_getValue(TIMER32_0_BASE) > 0);
+}
+
+
+/**
+ * Draws a string
+ */
+void drawString(Graphics_Context g_sContext, int8_t* theString, int i, int j){
+    //Change foreground color to the color of the text we want
+    Graphics_setForegroundColor(&g_sContext, GRAPHICS_COLOR_RED);
+
+    //Draw the string at the specified location
+    Graphics_drawString(&g_sContext, theString, -1, i, j, true);
+}
+
+
+
 /*
  * Main function
  */
@@ -82,15 +188,10 @@ int main(void)
     /* Initializes graphics context */
     Graphics_initContext(&g_sContext, &g_sCrystalfontz128x128, &g_sCrystalfontz128x128_funcs);
     Graphics_setForegroundColor(&g_sContext, GRAPHICS_COLOR_RED);
-    Graphics_setBackgroundColor(&g_sContext, GRAPHICS_COLOR_WHITE);
+    Graphics_setBackgroundColor(&g_sContext, GRAPHICS_COLOR_BLACK);
     GrContextFontSet(&g_sContext, &g_sFontFixed6x8);
     Graphics_clearDisplay(&g_sContext);
-    Graphics_drawStringCentered(&g_sContext,
-                                    (int8_t *)"Joystick:",
-                                    AUTO_STRING_LENGTH,
-                                    64,
-                                    30,
-                                    OPAQUE_TEXT);
+
 
     /* Configures Pin 6.0 and 4.4 as ADC input */
     MAP_GPIO_setAsPeripheralModuleFunctionInputPin(GPIO_PORT_P6, GPIO_PIN0, GPIO_TERTIARY_MODULE_FUNCTION);
@@ -128,10 +229,61 @@ int main(void)
     MAP_ADC14_enableConversion();
     MAP_ADC14_toggleConversionTrigger();
 
+
+    //Set the background to black to simulate space and the foreground to red for our plane
+    Graphics_setBackgroundColor(&g_sContext, GRAPHICS_COLOR_BLACK);
+    Graphics_setForegroundColor(&g_sContext, GRAPHICS_COLOR_RED);
+    Graphics_clearDisplay(&g_sContext);
+
+    //Draw the place and give it coordinates (Plane is a square for now)
+    planeXLeft = 10;
+    planeXRight = 20;
+    planeYTop = 55;
+    planeYBottom = 65;
+
+    //Draw the initial plane
+    drawRect(g_sContext, planeXLeft, planeYTop, planeXRight, planeYBottom);
+
+    //Set variable to slow plane and slow asteroid
+    slowPlane = 0;
+    slowAst = 0;
+
+    //Initialize the timer and delay
+    timer_delay_init();
+
+    //Create the delay time
+    delay_time_us = 20000;
+
+    //Draw a random asteroid
+    astXLeft = 122;
+    astXRight = 127;
+    astYTop = 50;
+    astYBottom = 60;
+    drawRect(g_sContext, astXLeft, astYTop, astXRight, astYBottom);
+
+    //Initialize didPlaneCollide
+    didPlaneCollide = false;
+
+
     while(1)
     {
+        //Exit the while loop if there was a collision
+        if(didPlaneCollide == true)
+        {
+            Graphics_clearDisplay(&g_sContext);
+            break;
+        }
         MAP_PCM_gotoLPM0();
+
     }
+
+    //If we hit here there was a collision. Clear all screen and display game over
+    eraseRect(g_sContext, planeXLeft, planeYTop, planeXRight, planeYBottom);
+    eraseRect(g_sContext, astXLeft, astYTop, astXRight, astYBottom);
+    Graphics_clearDisplay(&g_sContext);
+    drawString(g_sContext, (int8_t*) "GAME OVER.", 5, 50);
+    return 1;
+
 }
 
 
@@ -153,34 +305,117 @@ void ADC14_IRQHandler(void)
     	resultsBuffer[1] = ADC14_getResult(ADC_MEM1);
 
 
-        char string[10];
-        sprintf(string, "X: %5d", resultsBuffer[0]);
-        Graphics_drawStringCentered(&g_sContext,
-                                        (int8_t *)string,
-                                        8,
-                                        64,
-                                        50,
-                                        OPAQUE_TEXT);
+        /********* Updat the Plane's coordinates *************/
 
-        sprintf(string, "Y: %5d", resultsBuffer[1]);
-        Graphics_drawStringCentered(&g_sContext,
-                                        (int8_t *)string,
-                                        8,
-                                        64,
-                                        70,
-                                        OPAQUE_TEXT);
+    	//Case 1: Joystick is being moved up, move plane up
+        if(resultsBuffer[1] > 9500)
+        {
+            //Update slowPlane
+            slowPlane++;
 
-        /* Determine if JoyStick button is pressed */
-        int buttonPressed = 0;
-        if (!(P4IN & GPIO_PIN1))
-            buttonPressed = 1;
+            if(slowPlane % 10 == 0)
+            {
+                //Erase the most current plane
+                eraseRect(g_sContext, planeXLeft, planeYTop, planeXRight, planeYBottom);
 
-        sprintf(string, "Button: %d", buttonPressed);
-        Graphics_drawStringCentered(&g_sContext,
-                                        (int8_t *)string,
-                                        AUTO_STRING_LENGTH,
-                                        64,
-                                        90,
-                                        OPAQUE_TEXT);
+                //Update the coordinates
+                planeYTop--;
+                planeYBottom--;
+
+                //Error check the coordinates
+                if(planeYTop < 0){
+                    planeYTop++;
+                    planeYBottom++;
+                }
+
+                //Draw the plane in the new coordinates
+                drawRect(g_sContext, planeXLeft, planeYTop, planeXRight, planeYBottom);
+
+                //update slowPlane
+                slowPlane = 0;
+            }
+        }
+
+
+
+        //Case 2: Joystick is being moved down, move plane down
+        if(resultsBuffer[1] < 7500)
+        {
+            //Update slowPlane
+            slowPlane++;
+
+            if(slowPlane % 10 == 0)
+            {
+                //Erase the most current plane
+                eraseRect(g_sContext, planeXLeft, planeYTop, planeXRight, planeYBottom);
+
+                //Update the coordinates
+                planeYTop++;
+                planeYBottom++;
+
+                //Error check the coordinates
+                if(planeYBottom  > 127){
+                    planeYTop--;
+                    planeYBottom--;
+                }
+
+                //Draw the plane in the new coordinates
+                drawRect(g_sContext, planeXLeft, planeYTop, planeXRight, planeYBottom);
+
+                //Update slowPlane
+                slowPlane = 0;
+            }
+        }
+
     }
+
+
+   //Increase the slow down variable
+   slowAst++;
+
+   //Check if mod value is true
+   if(slowAst % 20 == 0)
+   {
+       //Case 1: We are still on screen, move asteroid left
+       if(astXLeft > 0)
+       {
+           eraseRect(g_sContext, astXLeft, astYTop, astXRight, astYBottom);
+           delay(delay_time_us);
+           astXLeft--;
+           astXRight--;
+           drawRect(g_sContext, astXLeft, astYTop, astXRight, astYBottom);
+           slowAst = 0;
+       }
+
+       //Case 2: Asteroid is off screen. Erase it
+       if(astXLeft == 0){
+           eraseRect(g_sContext, astXLeft, astYTop, astXRight, astYBottom);
+       }
+   }
+
+   //Once asteroid goes off screen, reset it's values
+   if(astXLeft == 0){
+       astXLeft = 122;
+       astXRight = 127;
+   }
+
+   //Check for a collision
+   if((astXLeft >= planeXLeft && astXLeft <= planeXRight) && ((astYTop >= planeYTop && astYTop <= planeYBottom) || (astYBottom >= planeYTop && astYBottom <= planeYBottom)))
+   {
+       eraseRect(g_sContext, planeXLeft, planeYTop, planeXRight, planeYBottom);
+       eraseRect(g_sContext, astXLeft, astYTop, astXRight, astYBottom);
+       didPlaneCollide = true;
+   }
+
+
+   if(didPlaneCollide == true){
+       return;
+   }
+
+
+
+
+
+
+
 }
