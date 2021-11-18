@@ -155,6 +155,32 @@ void drawString(Graphics_Context g_sContext, int8_t* theString, int i, int j){
 }
 
 
+/**
+ * Init_Buttons
+ *
+ * Initializes the peripheral buttons used to control the LCD
+ */
+void Init_Buttons(void){
+    //Set up pins for GPIO. Top switch P5.1 Bottom Switch P3.5
+    //Clear the select registers for the switches
+    P5->SEL0 &= ~0x02;
+    P5->SEL1 &= ~0x02;
+    P3->SEL0 &= ~0x20;
+    P3->SEL1 &= ~0x20;
+
+    //Set the direction low for inputs
+    P5->DIR &= ~0x02;
+    P3->DIR &= ~0x20;
+
+    //Set resistor enable high for each to enable resistors
+    P5->REN |= 0x02;
+    P3->REN |= 0x20;
+
+    //Set out high for pull up resistor
+    P5OUT |= 0x02;
+    P3OUT |= 0x20;
+}
+
 
 /*
  * Main function
@@ -250,6 +276,9 @@ int main(void)
 
     //Initialize the timer and delay
     timer_delay_init();
+
+    //Initialize the buttons
+    Init_Buttons();
 
     //Create the delay time
     delay_time_us = 20000;
@@ -411,7 +440,25 @@ void ADC14_IRQHandler(void)
 
        if(didPlaneCollide == true){
        return;
-   }
+       }
+    }
+
+
+    if(didPlaneCollide == false)
+    {
+        //Check if the button is pushed
+        if(~P5IN & 0x02)
+        {
+            //Draw the laser
+
+            //Create a boolean to see if the laser was fired
+        }
+
+        //Check if laser boolean is true
+        //If true move it across screen similar to the asteroid
+
+
+        //Check if it collides withh an object
     }
 
 
