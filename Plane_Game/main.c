@@ -44,8 +44,6 @@
 #include <stdio.h>
 #include <math.h>
 
-//Chris
-
 /* Graphic library context */
 Graphics_Context g_sContext;
 
