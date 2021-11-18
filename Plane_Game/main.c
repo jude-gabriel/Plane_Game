@@ -74,8 +74,15 @@ int slowAst;
 /* Instance Variable for if the plane makes a collision */
 bool didPlaneCollide;
 
+/* Variables for laser system */
+int MAX_LASERS = 8;
+int laserX[MAX_LASERS];
+int laserY[MAX_LASERS];
 
-
+for (int i = 0; i < MAX_LASERS; i ++) {
+    laserX[i] = -1;
+    laserY[i] = -1;
+}
 
 /**
  * Erases the plane
@@ -449,16 +456,34 @@ void ADC14_IRQHandler(void)
         //Check if the button is pushed
         if(~P5IN & 0x02)
         {
-            //Draw the laser
+            // Check for available laser
+            int laserId = -1;
+            for (int i = 0; i < MAX_LASERS; i ++) {
+                if laserX[i] == -1
+                laserId = i;
+                break;
+            }
 
-            //Create a boolean to see if the laser was fired
+            // Spawn the laser
+            if (laserId != -1) {
+                laserX[laserId] = planeXRight;
+                laserY[laserId] = (planeYTop + planeYBottom) / 2;
+            }
         }
 
-        //Check if laser boolean is true
-        //If true move it across screen similar to the asteroid
+        // Laser tick update
+        for (int i = 0; i < MAX_LASERS; i ++) {
+            // Move active lasers
+            if (laserX[i] != -1) {
+                laserX[i] ++;
+            }
+            // Delete lasers that go past the border
+            if (laserX[i] > 128) {
+                laserX[i] = -1;
+            }
+            //Check if it collides withh an object
 
-
-        //Check if it collides withh an object
+        }
     }
 
 
