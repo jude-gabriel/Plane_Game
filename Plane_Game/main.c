@@ -300,7 +300,7 @@ void ADC14_IRQHandler(void)
     MAP_ADC14_clearInterruptFlag(status);
 
     /* ADC_MEM1 conversion completed */
-    if(status & ADC_INT1)
+    if(status & ADC_INT1 && didPlaneCollide == false)
     {
         /* Store ADC14 conversion results */
     	resultsBuffer[0] = ADC14_getResult(ADC_MEM0);
@@ -371,48 +371,50 @@ void ADC14_IRQHandler(void)
 
     }
 
+    if(didPlaneCollide == false)
+    {
+       //Increase the slow down variable
+       slowAst++;
 
-   //Increase the slow down variable
-   slowAst++;
-
-   //Check if mod value is true
-   if(slowAst % 20 == 0)
-   {
-       //Case 1: We are still on screen, move asteroid left
-       if(astXLeft > 0)
+       //Check if mod value is true
+       if(slowAst % 20 == 0)
        {
-           eraseRect(g_sContext, astXLeft, astYTop, astXRight, astYBottom);
-           delay(delay_time_us);
-           astXLeft--;
-           astXRight--;
-           drawRect(g_sContext, astXLeft, astYTop, astXRight, astYBottom);
-           slowAst = 0;
+           //Case 1: We are still on screen, move asteroid left
+           if(astXLeft > 0)
+           {
+               eraseRect(g_sContext, astXLeft, astYTop, astXRight, astYBottom);
+               delay(delay_time_us);
+               astXLeft--;
+               astXRight--;
+               drawRect(g_sContext, astXLeft, astYTop, astXRight, astYBottom);
+               slowAst = 0;
+           }
+
+           //Case 2: Asteroid is off screen. Erase it
+           if(astXLeft == 0){
+               eraseRect(g_sContext, astXLeft, astYTop, astXRight, astYBottom);
+           }
        }
 
-       //Case 2: Asteroid is off screen. Erase it
+       //Once asteroid goes off screen, reset it's values
        if(astXLeft == 0){
-           eraseRect(g_sContext, astXLeft, astYTop, astXRight, astYBottom);
+           astXLeft = 122;
+           astXRight = 127;
        }
-   }
 
-   //Once asteroid goes off screen, reset it's values
-   if(astXLeft == 0){
-       astXLeft = 122;
-       astXRight = 127;
-   }
-
-   //Check for a collision
-   if((astXLeft >= planeXLeft && astXLeft <= planeXRight) && ((astYTop >= planeYTop && astYTop <= planeYBottom) || (astYBottom >= planeYTop && astYBottom <= planeYBottom)))
-   {
-       eraseRect(g_sContext, planeXLeft, planeYTop, planeXRight, planeYBottom);
-       eraseRect(g_sContext, astXLeft, astYTop, astXRight, astYBottom);
-       didPlaneCollide = true;
-   }
+       //Check for a collision
+       if((astXLeft >= planeXLeft && astXLeft <= planeXRight) && ((astYTop >= planeYTop && astYTop <= planeYBottom) || (astYBottom >= planeYTop && astYBottom <= planeYBottom)))
+       {
+           eraseRect(g_sContext, planeXLeft, planeYTop, planeXRight, planeYBottom);
+           eraseRect(g_sContext, astXLeft, astYTop, astXRight, astYBottom);
+           didPlaneCollide = true;
+       }
 
 
-   if(didPlaneCollide == true){
+       if(didPlaneCollide == true){
        return;
    }
+    }
 
 
 
