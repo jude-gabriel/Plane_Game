@@ -284,13 +284,13 @@ int main(void)
     astYTop = 50;
     astYBottom = 60;
     */
-    int a = rand() %127;//x
-    int b = rand() %127;//y
+    int a = (rand() % (117 - 20 + 1)) + 20;//x
+    int b = rand() % 127;//y
     /* Asteroid Locations */
     astXLeft = a;
     astXRight = a+5;
-    astYTop = a-50;
-    astYBottom =a-40;
+    astYTop = a;
+    astYBottom = a + 10;
     drawRect(g_sContext, astXLeft, astYTop, astXRight, astYBottom);
 
     //Initialize didPlaneCollide
@@ -362,7 +362,7 @@ void ADC14_IRQHandler(void)
                     planeYBottom--;
 
                     //Error check the coordinates
-                    if(planeYTop < 0){
+                    if(planeYTop < 20){
                         planeYTop++;
                         planeYBottom++;
                     }
@@ -434,13 +434,13 @@ void ADC14_IRQHandler(void)
 
        //Once asteroid goes off screen, reset it's values
        if(astXLeft == 0){
-           int a = rand() %127;//x
-               int b = rand() %127;//y
+           int a = (rand() % (117 - 20 + 1)) + 20;  //y
+
                /* Asteroid Locations */
                astXLeft = 122;
                astXRight = 127;
-               astYTop = a-50;
-               astYBottom =a-40;
+               astYTop = a;
+               astYBottom =a + 10;
        }
 
        //Check for a collision
