@@ -76,6 +76,11 @@ int slowAst;
 /* Instance Variable for if the plane makes a collision */
 bool didPlaneCollide;
 
+/* Variables for number of lives the player has and the string that displays it */
+#define lives_length 50
+char numLivesString[lives_length];
+int numLives;
+
 
 
 
@@ -154,6 +159,21 @@ void drawString(Graphics_Context g_sContext, int8_t* theString, int i, int j){
 
     //Draw the string at the specified location
     Graphics_drawString(&g_sContext, theString, -1, i, j, true);
+}
+
+
+/**
+ * Erases a string
+ */
+void eraseString(Graphics_Context g_sContext, int8_t* theString, int i, int j){
+    //Change the foreground color to the background color to cover the text
+    Graphics_setForegroundColor(&g_sContext, GRAPHICS_COLOR_BLACK);
+
+    //Draw the cover-up string
+    Graphics_drawString(&g_sContext, theString, -1, i, j, true);
+
+    //Set the foreground color back to yellow
+    Graphics_setForegroundColor(&g_sContext, GRAPHICS_COLOR_YELLOW);
 }
 
 
@@ -236,6 +256,7 @@ int main(void)
     Graphics_setBackgroundColor(&g_sContext, GRAPHICS_COLOR_BLACK);
     Graphics_setForegroundColor(&g_sContext, GRAPHICS_COLOR_RED);
     Graphics_clearDisplay(&g_sContext);
+    Graphics_setFont(&g_sContext, &g_sFontCm12);
 
     //Draw the place and give it coordinates (Plane is a square for now)
     planeXLeft = 10;
@@ -274,6 +295,11 @@ int main(void)
 
     //Initialize didPlaneCollide
     didPlaneCollide = false;
+
+    //Initialize the number of lives
+     numLives = 3;
+     snprintf(numLivesString, lives_length, "Lives Left: %d", numLives);
+     drawString(g_sContext, (int8_t*) numLivesString, 50, 5);
 
 
     while(1)
@@ -418,9 +444,26 @@ void ADC14_IRQHandler(void)
    //Check for a collision
    if((astXLeft >= planeXLeft && astXLeft <= planeXRight) && ((astYTop >= planeYTop && astYTop <= planeYBottom) || (astYBottom >= planeYTop && astYBottom <= planeYBottom)))
    {
-       eraseRect(g_sContext, planeXLeft, planeYTop, planeXRight, planeYBottom);
+       //Take the object off of the screen
        eraseRect(g_sContext, astXLeft, astYTop, astXRight, astYBottom);
-       didPlaneCollide = true;
+       astXLeft = 0;
+       astXRight = 0;
+
+       //Update the number of lives
+      numLives--;
+
+      //Redraw the string
+      eraseString(g_sContext, (int8_t*) numLivesString, 50, 5);
+      snprintf(numLivesString, lives_length, "Lives Left: %d", numLives);
+      drawString(g_sContext, (int8_t*) numLivesString, 50, 5);
+
+      //Check if out of lives
+      if(numLives == 0)
+      {
+          //If we are out of lives set to true so the game ends
+          didPlaneCollide = true;
+      }
+
    }
 
 
