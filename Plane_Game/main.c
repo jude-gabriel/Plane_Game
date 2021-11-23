@@ -72,6 +72,8 @@ int astYBottom;
 
 /* Instance variable to slow the asteroid */
 int slowAst;
+int countAstSpeed;
+int astModSpeed;
 
 /* Instance Variable for if the plane makes a collision */
 bool didPlaneCollide;
@@ -270,6 +272,8 @@ int main(void)
     //Set variable to slow plane and slow asteroid
     slowPlane = 0;
     slowAst = 0;
+    countAstSpeed = 0;
+    astModSpeed = 40;
 
     //Initialize the timer and delay
     timer_delay_init();
@@ -287,11 +291,12 @@ int main(void)
     int a = (rand() % (117 - 20 + 1)) + 20;//x
     int b = rand() % 127;//y
     /* Asteroid Locations */
-    astXLeft = a;
-    astXRight = a+5;
+    astXLeft = 122;
+    astXRight = 127;
     astYTop = a;
     astYBottom = a + 10;
     drawRect(g_sContext, astXLeft, astYTop, astXRight, astYBottom);
+
 
     //Initialize didPlaneCollide
     didPlaneCollide = false;
@@ -411,9 +416,10 @@ void ADC14_IRQHandler(void)
 
        //Increase the slow down variable
        slowAst++;
+       countAstSpeed++;
 
        //Check if mod value is true
-       if(slowAst % 20 == 0)
+       if(slowAst % astModSpeed == 0)
        {
            //Case 1: We are still on screen, move asteroid left
            if(astXLeft > 0)
@@ -424,6 +430,12 @@ void ADC14_IRQHandler(void)
                astXRight--;
                drawRect(g_sContext, astXLeft, astYTop, astXRight, astYBottom);
                slowAst = 0;
+               if(countAstSpeed % 200 == 0){
+                   astModSpeed--;
+                   if(astModSpeed <= 5){
+                       astModSpeed = 5;
+                   }
+               }
            }
 
            //Case 2: Asteroid is off screen. Erase it
