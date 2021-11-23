@@ -62,6 +62,8 @@ int slowPlane;
 /* Delay Variable */
 uint32_t delay_time_us;
 
+//generate random number for the coordinates.
+
 /* Asteroid Locations */
 int astXLeft;
 int astXRight;
@@ -74,20 +76,8 @@ int slowAst;
 /* Instance Variable for if the plane makes a collision */
 bool didPlaneCollide;
 
-/* Variables for laser system */
-int MAX_LASERS = 8;
-int laserX[MAX_LASERS];
-int laserY[MAX_LASERS];
 
-for (int i = 0; i < MAX_LASERS; i ++) {
-    laserX[i] = -1;
-    laserY[i] = -1;
-}
 
-/* Variables for number of lives the player has and the string that displays it */
-#define lives_length 50
-char numLivesString[lives_length];
-int numLives;
 
 /**
  * Erases the plane
@@ -167,47 +157,6 @@ void drawString(Graphics_Context g_sContext, int8_t* theString, int i, int j){
 }
 
 
-/**
- * Erases a string
- */
-void eraseString(Graphics_Context g_sContext, int8_t* theString, int i, int j){
-    //Change the foreground color to the background color to cover the text
-    Graphics_setForegroundColor(&g_sContext, GRAPHICS_COLOR_BLACK);
-
-    //Draw the cover-up string
-    Graphics_drawString(&g_sContext, theString, -1, i, j, true);
-
-    //Set the foreground color back to yellow
-    Graphics_setForegroundColor(&g_sContext, GRAPHICS_COLOR_YELLOW);
-}
-
-
-/**
- * Init_Buttons
- *
- * Initializes the peripheral buttons used to control the LCD
- */
-void Init_Buttons(void){
-    //Set up pins for GPIO. Top switch P5.1 Bottom Switch P3.5
-    //Clear the select registers for the switches
-    P5->SEL0 &= ~0x02;
-    P5->SEL1 &= ~0x02;
-    P3->SEL0 &= ~0x20;
-    P3->SEL1 &= ~0x20;
-
-    //Set the direction low for inputs
-    P5->DIR &= ~0x02;
-    P3->DIR &= ~0x20;
-
-    //Set resistor enable high for each to enable resistors
-    P5->REN |= 0x02;
-    P3->REN |= 0x20;
-
-    //Set out high for pull up resistor
-    P5OUT |= 0x02;
-    P3OUT |= 0x20;
-}
-
 
 /*
  * Main function
@@ -244,7 +193,6 @@ int main(void)
     Graphics_setBackgroundColor(&g_sContext, GRAPHICS_COLOR_BLACK);
     GrContextFontSet(&g_sContext, &g_sFontFixed6x8);
     Graphics_clearDisplay(&g_sContext);
-    Graphics_setFont(&g_sContext, &g_sFontCm12);
 
 
     /* Configures Pin 6.0 and 4.4 as ADC input */
@@ -305,26 +253,27 @@ int main(void)
     //Initialize the timer and delay
     timer_delay_init();
 
-    //Initialize the buttons
-    Init_Buttons();
-
     //Create the delay time
     delay_time_us = 20000;
 
     //Draw a random asteroid
+    /*
     astXLeft = 122;
     astXRight = 127;
     astYTop = 50;
     astYBottom = 60;
+    */
+    int a = rand() %127;//x
+    int b = rand() %127;//y
+    /* Asteroid Locations */
+    astXLeft = a;
+    astXRight = a+5;
+    astYTop = a-50;
+    astYBottom =a-40;
     drawRect(g_sContext, astXLeft, astYTop, astXRight, astYBottom);
 
     //Initialize didPlaneCollide
     didPlaneCollide = false;
-
-    //Initialize the number of lives
-    numLives = 3;
-    snprintf(numLivesString, lives_length, "Lives Left: %d", numLives);
-    drawString(g_sContext, (int8_t*) numLivesString, 50, 5);
 
 
     while(1)
@@ -360,16 +309,16 @@ void ADC14_IRQHandler(void)
     MAP_ADC14_clearInterruptFlag(status);
 
     /* ADC_MEM1 conversion completed */
-    if(status & ADC_INT1 && didPlaneCollide == false)
+    if(status & ADC_INT1)
     {
         /* Store ADC14 conversion results */
-    	resultsBuffer[0] = ADC14_getResult(ADC_MEM0);
-    	resultsBuffer[1] = ADC14_getResult(ADC_MEM1);
+        resultsBuffer[0] = ADC14_getResult(ADC_MEM0);
+        resultsBuffer[1] = ADC14_getResult(ADC_MEM1);
 
 
         /********* Updat the Plane's coordinates *************/
 
-    	//Case 1: Joystick is being moved up, move plane up
+        //Case 1: Joystick is being moved up, move plane up
         if(resultsBuffer[1] > 9500)
         {
             //Update slowPlane
@@ -431,102 +380,53 @@ void ADC14_IRQHandler(void)
 
     }
 
-    if(didPlaneCollide == false)
-    {
-       //Increase the slow down variable
-       slowAst++;
 
-       //Check if mod value is true
-       if(slowAst % 20 == 0)
+   //Increase the slow down variable
+   slowAst++;
+
+   //Check if mod value is true
+   if(slowAst % 20 == 0)
+   {
+       //Case 1: We are still on screen, move asteroid left
+       if(astXLeft > 0)
        {
-           //Case 1: We are still on screen, move asteroid left
-           if(astXLeft > 0)
-           {
-               eraseRect(g_sContext, astXLeft, astYTop, astXRight, astYBottom);
-               delay(delay_time_us);
-               astXLeft--;
-               astXRight--;
-               drawRect(g_sContext, astXLeft, astYTop, astXRight, astYBottom);
-               slowAst = 0;
-           }
-
-           //Case 2: Asteroid is off screen. Erase it
-           if(astXLeft == 0){
-               eraseRect(g_sContext, astXLeft, astYTop, astXRight, astYBottom);
-           }
+           eraseRect(g_sContext, astXLeft, astYTop, astXRight, astYBottom);
+           delay(delay_time_us);
+           astXLeft--;
+           astXRight--;
+           drawRect(g_sContext, astXLeft, astYTop, astXRight, astYBottom);
+           slowAst = 0;
        }
 
-       //Once asteroid goes off screen, reset it's values
+       //Case 2: Asteroid is off screen. Erase it
        if(astXLeft == 0){
+           eraseRect(g_sContext, astXLeft, astYTop, astXRight, astYBottom);
+       }
+   }
+
+   //Once asteroid goes off screen, reset it's values
+   if(astXLeft == 0){
+       int a = rand() %127;//x
+           int b = rand() %127;//y
+           /* Asteroid Locations */
            astXLeft = 122;
            astXRight = 127;
-       }
+           astYTop = a-50;
+           astYBottom =a-40;
+   }
 
-       //Check for a collision
-       if((astXLeft >= planeXLeft && astXLeft <= planeXRight) && ((astYTop >= planeYTop && astYTop <= planeYBottom) || (astYBottom >= planeYTop && astYBottom <= planeYBottom)))
-       {
-           //Take the object off of the screen
-           eraseRect(g_sContext, astXLeft, astYTop, astXRight, astYBottom);
-           astXLeft = 0;
-           astXRight = 0;
-
-           //Update the number of lives
-          numLives--;
-
-          //Redraw the string
-          eraseString(g_sContext, (int8_t*) numLivesString, 50, 5);
-          snprintf(numLivesString, lives_length, "Lives Left: %d", numLives);
-          drawString(g_sContext, (int8_t*) numLivesString, 50, 5);
-
-          //Check if out of lives
-          if(numLives == 0)
-          {
-              //If we are out of lives set to true so the game ends
-              didPlaneCollide = true;
-          }
-       }
+   //Check for a collision
+   if((astXLeft >= planeXLeft && astXLeft <= planeXRight) && ((astYTop >= planeYTop && astYTop <= planeYBottom) || (astYBottom >= planeYTop && astYBottom <= planeYBottom)))
+   {
+       eraseRect(g_sContext, planeXLeft, planeYTop, planeXRight, planeYBottom);
+       eraseRect(g_sContext, astXLeft, astYTop, astXRight, astYBottom);
+       didPlaneCollide = true;
+   }
 
 
-       if(didPlaneCollide == true){
-           return;
-       }
-    }
-
-
-    if(didPlaneCollide == false)
-    {
-        //Check if the button is pushed
-        if(~P5IN & 0x02)
-        {
-            // Check for available laser
-            int laserId = -1;
-            for (int i = 0; i < MAX_LASERS; i ++) {
-                if laserX[i] == -1
-                laserId = i;
-                break;
-            }
-
-            // Spawn the laser
-            if (laserId != -1) {
-                laserX[laserId] = planeXRight;
-                laserY[laserId] = (planeYTop + planeYBottom) / 2;
-            }
-        }
-
-        // Laser tick update
-        for (int i = 0; i < MAX_LASERS; i ++) {
-            // Move active lasers
-            if (laserX[i] != -1) {
-                laserX[i] ++;
-            }
-            // Delete lasers that go past the border
-            if (laserX[i] > 128) {
-                laserX[i] = -1;
-            }
-            //Check if it collides withh an object
-
-        }
-    }
+   if(didPlaneCollide == true){
+       return;
+   }
 
 
 
