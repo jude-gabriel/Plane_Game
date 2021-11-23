@@ -334,137 +334,140 @@ void ADC14_IRQHandler(void)
     status = MAP_ADC14_getEnabledInterruptStatus();
     MAP_ADC14_clearInterruptFlag(status);
 
-    /* ADC_MEM1 conversion completed */
-    if(status & ADC_INT1)
-    {
-        /* Store ADC14 conversion results */
-        resultsBuffer[0] = ADC14_getResult(ADC_MEM0);
-        resultsBuffer[1] = ADC14_getResult(ADC_MEM1);
 
-
-        /********* Updat the Plane's coordinates *************/
-
-        //Case 1: Joystick is being moved up, move plane up
-        if(resultsBuffer[1] > 9500)
+    if(didPlaneCollide == false){
+        /* ADC_MEM1 conversion completed */
+        if(status & ADC_INT1)
         {
-            //Update slowPlane
-            slowPlane++;
+            /* Store ADC14 conversion results */
+            resultsBuffer[0] = ADC14_getResult(ADC_MEM0);
+            resultsBuffer[1] = ADC14_getResult(ADC_MEM1);
 
-            if(slowPlane % 10 == 0)
+
+            /********* Updat the Plane's coordinates *************/
+
+            //Case 1: Joystick is being moved up, move plane up
+            if(resultsBuffer[1] > 9500)
             {
-                //Erase the most current plane
-                eraseRect(g_sContext, planeXLeft, planeYTop, planeXRight, planeYBottom);
+                //Update slowPlane
+                slowPlane++;
 
-                //Update the coordinates
-                planeYTop--;
-                planeYBottom--;
+                if(slowPlane % 10 == 0)
+                {
+                    //Erase the most current plane
+                    eraseRect(g_sContext, planeXLeft, planeYTop, planeXRight, planeYBottom);
 
-                //Error check the coordinates
-                if(planeYTop < 0){
-                    planeYTop++;
-                    planeYBottom++;
-                }
-
-                //Draw the plane in the new coordinates
-                drawRect(g_sContext, planeXLeft, planeYTop, planeXRight, planeYBottom);
-
-                //update slowPlane
-                slowPlane = 0;
-            }
-        }
-
-
-
-        //Case 2: Joystick is being moved down, move plane down
-        if(resultsBuffer[1] < 7500)
-        {
-            //Update slowPlane
-            slowPlane++;
-
-            if(slowPlane % 10 == 0)
-            {
-                //Erase the most current plane
-                eraseRect(g_sContext, planeXLeft, planeYTop, planeXRight, planeYBottom);
-
-                //Update the coordinates
-                planeYTop++;
-                planeYBottom++;
-
-                //Error check the coordinates
-                if(planeYBottom  > 127){
+                    //Update the coordinates
                     planeYTop--;
                     planeYBottom--;
+
+                    //Error check the coordinates
+                    if(planeYTop < 0){
+                        planeYTop++;
+                        planeYBottom++;
+                    }
+
+                    //Draw the plane in the new coordinates
+                    drawRect(g_sContext, planeXLeft, planeYTop, planeXRight, planeYBottom);
+
+                    //update slowPlane
+                    slowPlane = 0;
                 }
-
-                //Draw the plane in the new coordinates
-                drawRect(g_sContext, planeXLeft, planeYTop, planeXRight, planeYBottom);
-
-                //Update slowPlane
-                slowPlane = 0;
             }
+
+
+
+            //Case 2: Joystick is being moved down, move plane down
+            if(resultsBuffer[1] < 7500)
+            {
+                //Update slowPlane
+                slowPlane++;
+
+                if(slowPlane % 10 == 0)
+                {
+                    //Erase the most current plane
+                    eraseRect(g_sContext, planeXLeft, planeYTop, planeXRight, planeYBottom);
+
+                    //Update the coordinates
+                    planeYTop++;
+                    planeYBottom++;
+
+                    //Error check the coordinates
+                    if(planeYBottom  > 127){
+                        planeYTop--;
+                        planeYBottom--;
+                    }
+
+                    //Draw the plane in the new coordinates
+                    drawRect(g_sContext, planeXLeft, planeYTop, planeXRight, planeYBottom);
+
+                    //Update slowPlane
+                    slowPlane = 0;
+                }
+            }
+
         }
 
-    }
 
+       //Increase the slow down variable
+       slowAst++;
 
-   //Increase the slow down variable
-   slowAst++;
-
-   //Check if mod value is true
-   if(slowAst % 20 == 0)
-   {
-       //Case 1: We are still on screen, move asteroid left
-       if(astXLeft > 0)
+       //Check if mod value is true
+       if(slowAst % 20 == 0)
        {
-           eraseRect(g_sContext, astXLeft, astYTop, astXRight, astYBottom);
-           delay(delay_time_us);
-           astXLeft--;
-           astXRight--;
-           drawRect(g_sContext, astXLeft, astYTop, astXRight, astYBottom);
-           slowAst = 0;
+           //Case 1: We are still on screen, move asteroid left
+           if(astXLeft > 0)
+           {
+               eraseRect(g_sContext, astXLeft, astYTop, astXRight, astYBottom);
+               delay(delay_time_us);
+               astXLeft--;
+               astXRight--;
+               drawRect(g_sContext, astXLeft, astYTop, astXRight, astYBottom);
+               slowAst = 0;
+           }
+
+           //Case 2: Asteroid is off screen. Erase it
+           if(astXLeft == 0){
+               eraseRect(g_sContext, astXLeft, astYTop, astXRight, astYBottom);
+           }
        }
 
-       //Case 2: Asteroid is off screen. Erase it
+       //Once asteroid goes off screen, reset it's values
        if(astXLeft == 0){
-           eraseRect(g_sContext, astXLeft, astYTop, astXRight, astYBottom);
+           int a = rand() %127;//x
+               int b = rand() %127;//y
+               /* Asteroid Locations */
+               astXLeft = 122;
+               astXRight = 127;
+               astYTop = a-50;
+               astYBottom =a-40;
        }
-   }
 
-   //Once asteroid goes off screen, reset it's values
-   if(astXLeft == 0){
-       int a = rand() %127;//x
-           int b = rand() %127;//y
-           /* Asteroid Locations */
-           astXLeft = 122;
-           astXRight = 127;
-           astYTop = a-50;
-           astYBottom =a-40;
-   }
+       //Check for a collision
+       if((astXLeft >= planeXLeft && astXLeft <= planeXRight) && ((astYTop >= planeYTop && astYTop <= planeYBottom) || (astYBottom >= planeYTop && astYBottom <= planeYBottom)))
+       {
+           //Take the object off of the screen
+           eraseRect(g_sContext, astXLeft, astYTop, astXRight, astYBottom);
+           astXLeft = 0;
+           astXRight = 0;
 
-   //Check for a collision
-   if((astXLeft >= planeXLeft && astXLeft <= planeXRight) && ((astYTop >= planeYTop && astYTop <= planeYBottom) || (astYBottom >= planeYTop && astYBottom <= planeYBottom)))
-   {
-       //Take the object off of the screen
-       eraseRect(g_sContext, astXLeft, astYTop, astXRight, astYBottom);
-       astXLeft = 0;
-       astXRight = 0;
+           //Update the number of lives
+          numLives--;
 
-       //Update the number of lives
-      numLives--;
+          //Redraw the string
+          eraseString(g_sContext, (int8_t*) numLivesString, 50, 5);
+          snprintf(numLivesString, lives_length, "Lives Left: %d", numLives);
+          drawString(g_sContext, (int8_t*) numLivesString, 50, 5);
 
-      //Redraw the string
-      eraseString(g_sContext, (int8_t*) numLivesString, 50, 5);
-      snprintf(numLivesString, lives_length, "Lives Left: %d", numLives);
-      drawString(g_sContext, (int8_t*) numLivesString, 50, 5);
+          //Check if out of lives
+          if(numLives == 0)
+          {
+              //If we are out of lives set to true so the game ends
+              didPlaneCollide = true;
+          }
 
-      //Check if out of lives
-      if(numLives == 0)
-      {
-          //If we are out of lives set to true so the game ends
-          didPlaneCollide = true;
-      }
-
-   }
+       }
+    }
 
 
    if(didPlaneCollide == true){
