@@ -83,6 +83,11 @@ bool didPlaneCollide;
 char numLivesString[lives_length];
 int numLives;
 
+/* Variables for the score */
+int score;
+#define score_length 50
+char scoreString[score_length];
+
 
 
 
@@ -288,8 +293,9 @@ int main(void)
     astYTop = 50;
     astYBottom = 60;
     */
-    int a = (rand() % (117 - 20 + 1)) + 20;//x
+    int a = (rand() % (107 - 20 + 1)) + 20;//x
     int b = rand() % 127;//y
+
     /* Asteroid Locations */
     astXLeft = 122;
     astXRight = 127;
@@ -306,6 +312,10 @@ int main(void)
      snprintf(numLivesString, lives_length, "Lives Left: %d", numLives);
      drawString(g_sContext, (int8_t*) numLivesString, 50, 5);
 
+     //Initialize the score
+     score = 0;
+     snprintf(scoreString, score_length, "Score: %d", score);
+     drawString(g_sContext, (int8_t*) scoreString, 50, 115);
 
     while(1)
     {
@@ -398,7 +408,7 @@ void ADC14_IRQHandler(void)
                     planeYBottom++;
 
                     //Error check the coordinates
-                    if(planeYBottom  > 127){
+                    if(planeYBottom  > 117){
                         planeYTop--;
                         planeYBottom--;
                     }
@@ -446,7 +456,7 @@ void ADC14_IRQHandler(void)
 
        //Once asteroid goes off screen, reset it's values
        if(astXLeft == 0){
-           int a = (rand() % (117 - 20 + 1)) + 20;  //y
+           int a = (rand() % (107 - 20 + 1)) + 20;  //y
 
                /* Asteroid Locations */
                astXLeft = 122;
