@@ -92,6 +92,7 @@ char scoreString[score_length];
 int MAX_LASERS = 8;
 int laserX[MAX_LASERS];
 int laserY[MAX_LASERS];
+int laserSpeed = 2;
 
 for (int i = 0; i < MAX_LASERS; i ++) {
     laserX[i] = -1;
@@ -521,14 +522,15 @@ void ADC14_IRQHandler(void)
                for (int i = 0; i < MAX_LASERS; i ++) {
                    // Move active lasers
                    if (laserX[i] != -1) {
-                       laserX[i] ++;
+                       laserX[i] += laserSpeed;
                    }
                    // Delete lasers that go past the border
                    if (laserX[i] > 128) {
                        laserX[i] = -1;
                    }
-                   //Check if it collides with an object
-
+                   // Draw laser
+                   eraseRect(g_sContext, laserX[i]-5-laserSpeed, laserY[i]-1, laserX[i]+5 - laserSpeed, laserY[i]+1);
+                   drawRect(g_sContext, laserX[i]-5, laserY[i]-1, laserX[i]+5, laserY[i]+1);
                }
 
                // Asteroid collision
