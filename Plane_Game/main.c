@@ -88,7 +88,15 @@ int score;
 #define score_length 50
 char scoreString[score_length];
 
+/* Variables for laser system */
+int MAX_LASERS = 8;
+int laserX[MAX_LASERS];
+int laserY[MAX_LASERS];
 
+for (int i = 0; i < MAX_LASERS; i ++) {
+    laserX[i] = -1;
+    laserY[i] = -1;
+}
 
 
 /**
@@ -489,6 +497,52 @@ void ADC14_IRQHandler(void)
           }
 
        }
+
+       /* Laser code */
+       //Check if the button is pushed
+               if(~P5IN & 0x02)
+               {
+                   // Check for available laser
+                   int laserId = -1;
+                   for (int i = 0; i < MAX_LASERS; i ++) {
+                       if laserX[i] == -1
+                       laserId = i;
+                       break;
+                   }
+
+                   // Spawn the laser
+                   if (laserId != -1) {
+                       laserX[laserId] = planeXRight;
+                       laserY[laserId] = (planeYTop + planeYBottom) / 2;
+                   }
+               }
+
+               // Laser tick update
+               for (int i = 0; i < MAX_LASERS; i ++) {
+                   // Move active lasers
+                   if (laserX[i] != -1) {
+                       laserX[i] ++;
+                   }
+                   // Delete lasers that go past the border
+                   if (laserX[i] > 128) {
+                       laserX[i] = -1;
+                   }
+                   //Check if it collides with an object
+
+               }
+
+               // Asteroid collision
+               for (int i = 0; i < MAX_LASERS; i ++) {
+                   if (laserX[i] != -1) {
+                       if (laserX[i] > astXLeft && laserX[i] < astXRight && laserY[i] > astXTop && laserY[i] < astXBottom)
+                       laserX[i] = -1;
+                       astXLeft += 128;
+                       astYRight += 128
+                       int a = (rand() % (107 - 20 + 1)) + 20;  //y
+                       astYTop = a;
+                       astYBottom =a + 10;
+                   }
+               }
     }
 
 
