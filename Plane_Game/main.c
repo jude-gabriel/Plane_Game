@@ -89,15 +89,13 @@ int score;
 char scoreString[score_length];
 
 /* Variables for laser system */
-int MAX_LASERS = 8;
+#define MAX_LASERS 8
 int laserX[MAX_LASERS];
 int laserY[MAX_LASERS];
 int laserSpeed = 2;
 
-for (int i = 0; i < MAX_LASERS; i ++) {
-    laserX[i] = -1;
-    laserY[i] = -1;
-}
+int didFire;
+
 
 
 /**
@@ -316,6 +314,15 @@ int main(void)
     //Initialize didPlaneCollide
     didPlaneCollide = false;
 
+    //Initialize lasers
+    int i = 0;
+    for (i = 0; i < 8; i++) {
+        laserX[i] = -1;
+        laserY[i] = -1;
+    }
+
+    didFire = 0;
+
     //Initialize the number of lives
      numLives = 3;
      snprintf(numLivesString, lives_length, "Lives Left: %d", numLives);
@@ -503,12 +510,15 @@ void ADC14_IRQHandler(void)
        //Check if the button is pushed
                if(~P5IN & 0x02)
                {
+                   didFire = 1;
                    // Check for available laser
+                   int i = 0;
                    int laserId = -1;
-                   for (int i = 0; i < MAX_LASERS; i ++) {
-                       if laserX[i] == -1
-                       laserId = i;
-                       break;
+                   for (i = 0; i < MAX_LASERS; i ++) {
+                       if(laserX[i] == -1){
+                           laserId = i;
+                           break;
+                       }
                    }
 
                    // Spawn the laser
@@ -516,16 +526,20 @@ void ADC14_IRQHandler(void)
                        laserX[laserId] = planeXRight;
                        laserY[laserId] = (planeYTop + planeYBottom) / 2;
                    }
+
+
                }
 
                // Laser tick update
-               for (int i = 0; i < MAX_LASERS; i ++) {
+               if(didFire == 1){
+               int i = 0;
+               for (i = 0; i < MAX_LASERS; i ++) {
                    // Move active lasers
                    if (laserX[i] != -1) {
                        laserX[i] += laserSpeed;
                    }
                    // Delete lasers that go past the border
-                   if (laserX[i] > 128) {
+                   if (laserX[i] > 127) {
                        laserX[i] = -1;
                    }
                    // Draw laser
@@ -534,16 +548,19 @@ void ADC14_IRQHandler(void)
                }
 
                // Asteroid collision
-               for (int i = 0; i < MAX_LASERS; i ++) {
+               i = 0;
+               for (i = 0; i < MAX_LASERS; i ++) {
                    if (laserX[i] != -1) {
-                       if (laserX[i] > astXLeft && laserX[i] < astXRight && laserY[i] > astXTop && laserY[i] < astXBottom)
+                       if (laserX[i] > astXLeft && laserX[i] < astXRight && laserY[i] > astYTop && laserY[i] < astYBottom)
                        laserX[i] = -1;
                        astXLeft += 128;
-                       astYRight += 128
+                       astXRight += 128;
                        int a = (rand() % (107 - 20 + 1)) + 20;  //y
                        astYTop = a;
                        astYBottom =a + 10;
                    }
+               }
+
                }
     }
 
