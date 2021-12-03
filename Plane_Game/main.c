@@ -532,6 +532,30 @@ void ADC14_IRQHandler(void)
           }
 
        }
+       //check for collision with other asteroid
+              if((astXLeft1 >= planeXLeft && astXLeft1 <= planeXRight) && ((astYTop1 >= planeYTop && astYTop1 <= planeYBottom) || (astYBottom1 >= planeYTop && astYBottom1 <= planeYBottom)))
+                     {
+                         //Take the object off of the screen
+                         eraseRect(g_sContext, astXLeft1, astYTop1, astXRight1, astYBottom1);
+                         astXLeft1 = 0;
+                         astXRight1 = 0;
+
+                         //Update the number of lives
+                        numLives--;
+
+                        //Redraw the string
+                        eraseString(g_sContext, (int8_t*) numLivesString, 50, 5);
+                        snprintf(numLivesString, lives_length, "Lives Left: %d", numLives);
+                        drawString(g_sContext, (int8_t*) numLivesString, 50, 5);
+
+                        //Check if out of lives
+                        if(numLives == 0)
+                        {
+                            //If we are out of lives set to true so the game ends
+                            didPlaneCollide = true;
+                        }
+
+                     }
 
        /* Laser code */
        //Check if the button is pushed
