@@ -525,7 +525,7 @@ void ADC14_IRQHandler(void)
 
            // Spawn the laser
            if (laserId != -1) {
-               laserX[laserId] = planeXRight;
+               laserX[laserId] = planeXRight + 6;
                laserY[laserId] = (planeYTop + planeYBottom) / 2;
            }
 
