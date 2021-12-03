@@ -613,6 +613,16 @@ void ADC14_IRQHandler(void)
                        snprintf(scoreString, score_length, "Score: %d", score);
                        drawString(g_sContext, (int8_t*) scoreString, 50, 115);
                    }
+                   if (laserX[i] >= astXLeft1 && laserX[i] <= astXRight1 && laserY[i] >= astYTop1 && laserY[i] <= astYBottom1){
+                       eraseRect(g_sContext, astXLeft1, astYTop1, astXRight1, astYBottom1);
+                       astXLeft1 = 0;
+                       astXRight1 = 0;
+                       astYTop1 = 0;
+                       astYBottom1 = 0;
+                       score++;
+                       snprintf(scoreString, score_length, "Score: %d", score);
+                       drawString(g_sContext, (int8_t*) scoreString, 50, 115);
+                    }
                }
            }
        }
