@@ -88,9 +88,17 @@ int numLives;
 
 /* Variables for the score */
 int score;
+int scoreAdd;
 #define score_length 50
 char scoreString[score_length];
 
+/* Variables for laser system */
+#define MAX_LASERS 8
+int laserX[MAX_LASERS];
+int laserY[MAX_LASERS];
+int laserSpeed = 2;
+
+int didFire;
 
 
 
@@ -315,6 +323,15 @@ int main(void)
     //Initialize didPlaneCollide
     didPlaneCollide = false;
 
+    //Initialize lasers
+    int i = 0;
+    for (i = 0; i < 8; i++) {
+        laserX[i] = -1;
+        laserY[i] = -1;
+    }
+
+    didFire = 0;
+
     //Initialize the number of lives
      numLives = 3;
      snprintf(numLivesString, lives_length, "Lives Left: %d", numLives);
@@ -322,6 +339,7 @@ int main(void)
 
      //Initialize the score
      score = 0;
+     scoreAdd = 0;
      snprintf(scoreString, score_length, "Score: %d", score);
      drawString(g_sContext, (int8_t*) scoreString, 50, 115);
 
@@ -514,30 +532,66 @@ void ADC14_IRQHandler(void)
           }
 
        }
-       //check for collision with other asteroid
-       if((astXLeft1 >= planeXLeft && astXLeft1 <= planeXRight) && ((astYTop1 >= planeYTop && astYTop1 <= planeYBottom) || (astYBottom1 >= planeYTop && astYBottom1 <= planeYBottom)))
-              {
-                  //Take the object off of the screen
-                  eraseRect(g_sContext, astXLeft1, astYTop1, astXRight1, astYBottom1);
-                  astXLeft1 = 0;
-                  astXRight1 = 0;
 
-                  //Update the number of lives
-                 numLives--;
+       /* Laser code */
+       //Check if the button is pushed
+       if(~P5IN & 0x02)
+       {
+           didFire = 1;
+           // Check for available laser
+           int i = 0;
+           int laserId = -1;
+           for (i = 0; i < MAX_LASERS; i ++) {
+               if(laserX[i] == -1){
+                   laserId = i;
+                   break;
+               }
+           }
 
-                 //Redraw the string
-                 eraseString(g_sContext, (int8_t*) numLivesString, 50, 5);
-                 snprintf(numLivesString, lives_length, "Lives Left: %d", numLives);
-                 drawString(g_sContext, (int8_t*) numLivesString, 50, 5);
+           // Spawn the laser
+           if (laserId != -1) {
+               laserX[laserId] = planeXRight + 6;
+               laserY[laserId] = (planeYTop + planeYBottom) / 2;
+           }
 
-                 //Check if out of lives
-                 if(numLives == 0)
-                 {
-                     //If we are out of lives set to true so the game ends
-                     didPlaneCollide = true;
-                 }
 
-              }
+       }
+
+       // Laser tick update
+       if(didFire == 1){
+           int i = 0;
+           for (i = 0; i < MAX_LASERS; i ++) {
+               // Move active lasers
+               if (laserX[i] != -1) {
+                   laserX[i] += laserSpeed;
+               }
+               // Delete lasers that go past the border
+               if (laserX[i] > 127) {
+                   eraseRect(g_sContext, laserX[i]-5-laserSpeed, laserY[i]-1, laserX[i]+5 - laserSpeed, laserY[i]+1);
+                   laserX[i] = -1;
+               }
+               // Draw laser
+               eraseRect(g_sContext, laserX[i]-5-laserSpeed, laserY[i]-1, laserX[i]+5 - laserSpeed, laserY[i]+1);
+               drawRect(g_sContext, laserX[i]-5, laserY[i]-1, laserX[i], laserY[i]+1);
+           }
+
+           // Asteroid collision
+           i = 0;
+           for (i = 0; i < MAX_LASERS; i ++) {
+               if (laserX[i] != -1) {
+                   if (laserX[i] >= astXLeft && laserX[i] <= astXRight && laserY[i] >= astYTop && laserY[i] <= astYBottom){
+                       eraseRect(g_sContext, astXLeft, astYTop, astXRight, astYBottom);
+                       astXLeft = 0;
+                       astXRight = 0;
+                       astYTop = 0;
+                       astYBottom = 0;
+                       score++;
+                       snprintf(scoreString, score_length, "Score: %d", score);
+                       drawString(g_sContext, (int8_t*) scoreString, 50, 115);
+                   }
+               }
+           }
+       }
     }
 
 
