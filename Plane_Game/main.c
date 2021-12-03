@@ -69,7 +69,10 @@ int astXLeft;
 int astXRight;
 int astYTop;
 int astYBottom;
-
+int astXLeft1;
+int astXRight1;
+int astYTop1;
+int astYBottom1;
 /* Instance variable to slow the asteroid */
 int slowAst;
 int countAstSpeed;
@@ -293,8 +296,8 @@ int main(void)
     astYTop = 50;
     astYBottom = 60;
     */
-    int a = (rand() % (107 - 20 + 1)) + 20;//x
-    int b = rand() % 127;//y
+    int a = (rand() % (107 - 20 + 1)) + 20;//first asteroid
+    int b = (rand() % (107 - 20 + 1)) + 20;//second
 
     /* Asteroid Locations */
     astXLeft = 122;
@@ -302,7 +305,12 @@ int main(void)
     astYTop = a;
     astYBottom = a + 10;
     drawRect(g_sContext, astXLeft, astYTop, astXRight, astYBottom);
-
+    //second asteroid
+    astXLeft1 = 122;
+    astXRight1 = 127;
+    astYTop1 = b;
+    astYBottom1 = b + 10;
+    drawRect(g_sContext, astXLeft1, astYTop1, astXRight1, astYBottom1);
 
     //Initialize didPlaneCollide
     didPlaneCollide = false;
@@ -332,6 +340,7 @@ int main(void)
     //If we hit here there was a collision. Clear all screen and display game over
     eraseRect(g_sContext, planeXLeft, planeYTop, planeXRight, planeYBottom);
     eraseRect(g_sContext, astXLeft, astYTop, astXRight, astYBottom);
+    eraseRect(g_sContext, astXLeft1, astYTop1, astXRight1, astYBottom1);
     Graphics_clearDisplay(&g_sContext);
     drawString(g_sContext, (int8_t*) "GAME OVER.", 5, 50);
     return 1;
@@ -432,13 +441,17 @@ void ADC14_IRQHandler(void)
        if(slowAst % astModSpeed == 0)
        {
            //Case 1: We are still on screen, move asteroid left
-           if(astXLeft > 0)
+           if(astXLeft > 0 || astXLeft1>0)
            {
                eraseRect(g_sContext, astXLeft, astYTop, astXRight, astYBottom);
+               eraseRect(g_sContext, astXLeft1, astYTop1, astXRight1, astYBottom1);
                delay(delay_time_us);
                astXLeft--;
                astXRight--;
+               astXLeft1--;
+               astXRight1--;
                drawRect(g_sContext, astXLeft, astYTop, astXRight, astYBottom);
+               drawRect(g_sContext, astXLeft1, astYTop1, astXRight1, astYBottom1);
                slowAst = 0;
                if(countAstSpeed % 200 == 0){
                    astModSpeed--;
@@ -452,6 +465,9 @@ void ADC14_IRQHandler(void)
            if(astXLeft == 0){
                eraseRect(g_sContext, astXLeft, astYTop, astXRight, astYBottom);
            }
+           if(astXLeft1==0){
+               eraseRect(g_sContext, astXLeft1, astYTop1, astXRight1, astYBottom1);
+           }
        }
 
        //Once asteroid goes off screen, reset it's values
@@ -464,6 +480,15 @@ void ADC14_IRQHandler(void)
                astYTop = a;
                astYBottom =a + 10;
        }
+       if(astXLeft1 == 0){
+                  int b = (rand() % (107 - 20 + 1)) + 20;  //y
+
+                      /* Asteroid Locations */
+                      astXLeft1 = 122;
+                      astXRight1 = 127;
+                      astYTop1 = b;
+                      astYBottom1 =b + 10;
+              }
 
        //Check for a collision
        if((astXLeft >= planeXLeft && astXLeft <= planeXRight) && ((astYTop >= planeYTop && astYTop <= planeYBottom) || (astYBottom >= planeYTop && astYBottom <= planeYBottom)))
@@ -489,6 +514,30 @@ void ADC14_IRQHandler(void)
           }
 
        }
+       //check for collision with other asteroid
+       if((astXLeft1 >= planeXLeft && astXLeft1 <= planeXRight) && ((astYTop1 >= planeYTop && astYTop1 <= planeYBottom) || (astYBottom1 >= planeYTop && astYBottom1 <= planeYBottom)))
+              {
+                  //Take the object off of the screen
+                  eraseRect(g_sContext, astXLeft1, astYTop1, astXRight1, astYBottom1);
+                  astXLeft1 = 0;
+                  astXRight1 = 0;
+
+                  //Update the number of lives
+                 numLives--;
+
+                 //Redraw the string
+                 eraseString(g_sContext, (int8_t*) numLivesString, 50, 5);
+                 snprintf(numLivesString, lives_length, "Lives Left: %d", numLives);
+                 drawString(g_sContext, (int8_t*) numLivesString, 50, 5);
+
+                 //Check if out of lives
+                 if(numLives == 0)
+                 {
+                     //If we are out of lives set to true so the game ends
+                     didPlaneCollide = true;
+                 }
+
+              }
     }
 
 
