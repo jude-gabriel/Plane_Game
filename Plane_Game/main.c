@@ -331,6 +331,7 @@ int main(void)
     }
 
     didFire = 0;
+    laserCooldown = 0;
 
     //Initialize the number of lives
      numLives = 3;
@@ -573,15 +574,17 @@ void ADC14_IRQHandler(void)
            }
 
            // Spawn the laser
-           if (laserId != -1) {
+           if (laserId != -1 && laserCooldown > 5) {
                laserX[laserId] = planeXRight + 6;
                laserY[laserId] = (planeYTop + planeYBottom) / 2;
+               laserCooldown = 0;
            }
 
 
        }
 
        // Laser tick update
+       laserCooldown ++;
        if(didFire == 1){
            int i = 0;
            for (i = 0; i < MAX_LASERS; i ++) {
