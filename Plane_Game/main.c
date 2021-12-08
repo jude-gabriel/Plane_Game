@@ -97,7 +97,7 @@ char scoreString[score_length];
 int laserX[MAX_LASERS];
 int laserY[MAX_LASERS];
 int laserSpeed = 2;
-
+int laserCooldown;
 int didFire;
 
 
@@ -472,7 +472,7 @@ void ADC14_IRQHandler(void)
                drawRect(g_sContext, astXLeft, astYTop, astXRight, astYBottom);
                drawRect(g_sContext, astXLeft1, astYTop1, astXRight1, astYBottom1);
                slowAst = 0;
-               if(countAstSpeed % 200 == 0){
+               if(countAstSpeed % 50 == 0){
                    astModSpeed--;
                    if(astModSpeed <= 5){
                        astModSpeed = 5;
